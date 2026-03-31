@@ -76,6 +76,24 @@ LLM_MODEL=mistralai/mistral-7b-instruct:free   # must be a model offered by the 
 LLM_CONTEXT_MESSAGES=10
 ```
 
+### Rotating / revoking your API key
+
+If you revoke and regenerate your API key (e.g. on the OpenRouter dashboard), **only `LLM_API_KEY` needs to change**. The URL and model are tied to the provider and the model you chose — not to any specific key — so they stay exactly the same:
+
+```
+# Before rotation
+LLM_API_URL=https://openrouter.ai/api/v1/chat/completions   ← unchanged
+LLM_API_KEY=sk-or-v1-OLD...                                  ← replace this
+LLM_MODEL=mistralai/mistral-7b-instruct:free                 ← unchanged
+
+# After rotation
+LLM_API_URL=https://openrouter.ai/api/v1/chat/completions   ← same
+LLM_API_KEY=sk-or-v1-NEW...                                  ← updated new key
+LLM_MODEL=mistralai/mistral-7b-instruct:free                 ← same
+```
+
+Restart the bot after saving the updated `.env` and it will use the new key immediately.
+
 ### Running
 
 ```bash
