@@ -4,10 +4,14 @@ const axios = require('axios');
 
 const LLM_API_URL = process.env.LLM_API_URL;
 const LLM_API_KEY = process.env.LLM_API_KEY;
-const LLM_MODEL   = process.env.LLM_MODEL || 'gpt-4o-mini';
+const LLM_MODEL   = process.env.LLM_MODEL || 'mistralai/mistral-7b-instruct:free';
 
 /**
  * Phase 5 + 7 — LLM Integration with AI Task Detection
+ *
+ * Works with any OpenAI-compatible endpoint (OpenRouter, OpenAI, etc.).
+ * When using OpenRouter the HTTP-Referer and X-Title headers are recommended
+ * so that your app appears correctly in the OpenRouter dashboard.
  *
  * System prompt instructs the LLM to return structured JSON so the bot can
  * distinguish between a chat response and a task-creation action.
@@ -44,6 +48,9 @@ async function generateReply(history, input) {
       headers: {
         'Content-Type':  'application/json',
         'Authorization': `Bearer ${LLM_API_KEY}`,
+        // Recommended by OpenRouter — safe to include for other providers too
+        'HTTP-Referer':  'https://github.com/QuvonchbekToshqoziyev/personal-llm',
+        'X-Title':       'personal-llm',
       },
     }
   );

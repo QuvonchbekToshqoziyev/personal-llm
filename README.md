@@ -28,7 +28,7 @@ User → Telegram Bot → Node.js
 | 2 | SQLite schema — `messages` + `tasks` tables | `src/db.js` |
 | 3 | Mirror every message to private Telegram storage chat | `src/storage.js` |
 | 4 | Reconstruct conversation context from DB index | `src/memory.js` |
-| 5 | OpenAI-compatible LLM replies with context window | `src/llm.js` |
+| 5 | OpenRouter / OpenAI-compatible LLM replies with context window | `src/llm.js` |
 | 6 | Structured task CRUD backed by SQLite | `src/tasks.js` |
 | 7 | AI task detection — LLM returns `{action, ...}` JSON | `src/llm.js` |
 | 8 | Command handlers: `/task`, `/tasks`, `/done` | `src/bot.js` |
@@ -40,7 +40,7 @@ User → Telegram Bot → Node.js
 - Node.js 18+
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
 - A private Telegram chat/channel for message storage (add your bot as admin)
-- An OpenAI-compatible LLM API key and endpoint
+- An [OpenRouter](https://openrouter.ai) API key (or any OpenAI-compatible provider)
 
 ### Installation
 
@@ -62,10 +62,11 @@ TELEGRAM_BOT_TOKEN=your_bot_token_here
 # Private chat the bot uses as message archive (bot must be admin)
 TELEGRAM_STORAGE_CHAT_ID=-100xxxxxxxxxx
 
-# LLM
-LLM_API_URL=https://api.openai.com/v1/chat/completions
-LLM_API_KEY=your_llm_api_key_here
-LLM_MODEL=gpt-4o-mini
+# LLM — OpenRouter (https://openrouter.ai) is the default provider.
+# The endpoint is OpenAI-compatible; swap LLM_API_URL for any other provider.
+LLM_API_URL=https://openrouter.ai/api/v1/chat/completions
+LLM_API_KEY=sk-or-v1-...          # your OpenRouter key
+LLM_MODEL=mistralai/mistral-7b-instruct:free   # any model from openrouter.ai/models
 LLM_CONTEXT_MESSAGES=10
 ```
 
