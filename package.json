@@ -1,0 +1,28 @@
+{
+  "name": "personal-llm",
+  "version": "1.0.0",
+  "description": "Personal AI Telegram assistant",
+  "main": "src/bot.js",
+  "scripts": {
+    "start": "node src/bot.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/QuvonchbekToshqoziyev/personal-llm.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/QuvonchbekToshqoziyev/personal-llm/issues"
+  },
+  "homepage": "https://github.com/QuvonchbekToshqoziyev/personal-llm#readme",
+  "dependencies": {
+    "axios": "^1.14.0",
+    "better-sqlite3": "^12.8.0",
+    "dotenv": "^17.3.1",
+    "node-telegram-bot-api": "^0.67.0"
+  }
+}
