@@ -62,13 +62,37 @@ TELEGRAM_BOT_TOKEN=your_bot_token_here
 # Private chat the bot uses as message archive (bot must be admin)
 TELEGRAM_STORAGE_CHAT_ID=-100xxxxxxxxxx
 
-# LLM — OpenRouter (https://openrouter.ai) is the default provider.
-# The endpoint is OpenAI-compatible; swap LLM_API_URL for any other provider.
+# LLM — the three variables below MUST all belong to the same provider.
+# Mixing an OpenRouter key with the OpenAI URL (or vice-versa) will fail with a 401.
+#
+#   Provider      LLM_API_URL                                       LLM_API_KEY      LLM_MODEL example
+#   OpenRouter    https://openrouter.ai/api/v1/chat/completions     sk-or-v1-...     mistralai/mistral-7b-instruct:free
+#   OpenAI        https://api.openai.com/v1/chat/completions        sk-...           gpt-4o-mini
+#   Ollama(local) http://localhost:11434/v1/chat/completions        ollama           llama3
+#
 LLM_API_URL=https://openrouter.ai/api/v1/chat/completions
 LLM_API_KEY=sk-or-v1-...          # your OpenRouter key
-LLM_MODEL=mistralai/mistral-7b-instruct:free   # any model from openrouter.ai/models
+LLM_MODEL=mistralai/mistral-7b-instruct:free   # must be a model offered by the provider above
 LLM_CONTEXT_MESSAGES=10
 ```
+
+### Rotating / revoking your API key
+
+If you revoke and regenerate your API key (e.g. on the OpenRouter dashboard), **only `LLM_API_KEY` needs to change**. The URL and model are tied to the provider and the model you chose — not to any specific key — so they stay exactly the same:
+
+```
+# Before rotation
+LLM_API_URL=https://openrouter.ai/api/v1/chat/completions   ← unchanged
+LLM_API_KEY=sk-or-v1-OLD...                                  ← replace this
+LLM_MODEL=mistralai/mistral-7b-instruct:free                 ← unchanged
+
+# After rotation
+LLM_API_URL=https://openrouter.ai/api/v1/chat/completions   ← same
+LLM_API_KEY=sk-or-v1-NEW...                                  ← updated new key
+LLM_MODEL=mistralai/mistral-7b-instruct:free                 ← same
+```
+
+Restart the bot after saving the updated `.env` and it will use the new key immediately.
 
 ### Running
 
