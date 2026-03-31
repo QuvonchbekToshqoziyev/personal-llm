@@ -100,6 +100,28 @@ Restart the bot after saving the updated `.env` and it will use the new key imme
 npm start
 ```
 
+### Troubleshooting
+
+**`polling error ETelegram: 404 Not Found`**
+
+This happens when a webhook is already registered for your bot token.
+The bot now calls `deleteWebhook()` automatically on startup, so restarting
+with `npm start` is usually enough to clear it.
+
+If the error persists:
+1. Verify that `TELEGRAM_BOT_TOKEN` in `.env` is correct and the bot has not
+   been deleted via [@BotFather](https://t.me/BotFather).
+2. Delete the webhook manually:
+   ```
+   curl "https://api.telegram.org/bot<YOUR_TOKEN>/deleteWebhook"
+   ```
+3. Restart the bot.
+
+**`polling error ETelegram: 409 Conflict`**
+
+Another process is already polling with the same token.
+Stop all other running instances of the bot before starting a new one.
+
 ## Commands
 
 | Command | Description |

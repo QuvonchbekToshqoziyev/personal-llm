@@ -15,9 +15,20 @@ if (!token) {
   process.exit(1);
 }
 
-const bot = new TelegramBot(token, { polling: true });
+// Create the bot without auto-starting polling so we can delete any active
+// webhook first.  A stale webhook causes Telegram to return 404 on every
+// getUpdates request, which shows up as "polling error ETelegram: 404".
+const bot = new TelegramBot(token, { polling: false });
 
-console.log('Bot is running...');
+bot.deleteWebhook()
+  .catch((err) => {
+    // deleteWebhook failure is non-fatal — start polling anyway.
+    console.warn('Could not delete webhook (will attempt polling anyway):', err.message);
+  })
+  .finally(() => {
+    bot.startPolling();
+    console.log('Bot is running...');
+  });
 
 // ─── Phase 8: Command — /task <title> [due: YYYY-MM-DD] ───────────────────
 bot.onText(/^\/task (.+)/i, async (msg, match) => {
@@ -108,7 +119,20 @@ bot.on('message', async (msg) => {
 });
 
 bot.on('polling_error', (error) => {
-  console.error('Polling error:', error.message);
+  const code = error.code || error.response?.statusCode;
+  if (code === 404 || (error.message && error.message.includes('404'))) {
+    console.error(
+      'Polling error 404: the bot token is invalid or a webhook is still active. ' +
+      'Verify TELEGRAM_BOT_TOKEN in .env and restart the bot.'
+    );
+  } else if (code === 409 || (error.message && error.message.includes('409'))) {
+    console.error(
+      'Polling error 409: another bot instance is already running with this token. ' +
+      'Stop all other instances before starting a new one.'
+    );
+  } else {
+    console.error('Polling error:', error.message);
+  }
 });
 
 module.exports = bot;
