@@ -1,10 +1,30 @@
 'use strict';
 
 const axios = require('axios');
+const db    = require('./db');
 
-const LLM_API_URL = process.env.LLM_API_URL;
-const LLM_API_KEY = process.env.LLM_API_KEY;
-const LLM_MODEL   = process.env.LLM_MODEL || 'mistralai/mistral-7b-instruct:free';
+// ─── Runtime-configurable LLM settings ─────────────────────────────────────
+//
+// Values stored in the `settings` table take precedence over the environment
+// variables, allowing you to change the model or API key via Telegram bot
+// commands without restarting the process.
+
+function _cfg(key, envKey, fallback = '') {
+  return db.getSetting(key) || process.env[envKey] || fallback;
+}
+
+function llmApiUrl()   { return _cfg('llm_api_url',   'LLM_API_URL'); }
+function llmApiKey()   { return _cfg('llm_api_key',   'LLM_API_KEY'); }
+function llmModel()    { return _cfg('llm_model',     'LLM_MODEL', 'mistralai/mistral-7b-instruct:free'); }
+
+/**
+ * Persist a new LLM setting so it survives restarts.
+ * @param {'llm_api_url'|'llm_api_key'|'llm_model'} key
+ * @param {string} value
+ */
+function setLlmSetting(key, value) {
+  db.setSetting(key, value);
+}
 
 /**
  * Phase 5 + 7 — LLM Integration with AI Task Detection
@@ -32,6 +52,10 @@ For all other messages respond conversationally:
  * @returns {Promise<{ action: string, response?: string, title?: string, due_date?: string|null }>}
  */
 async function generateReply(history, input) {
+  const LLM_API_URL = llmApiUrl();
+  const LLM_API_KEY = llmApiKey();
+  const LLM_MODEL   = llmModel();
+
   if (!LLM_API_URL) throw new Error('LLM_API_URL is not set.');
   if (!LLM_API_KEY) throw new Error('LLM_API_KEY is not set.');
 
@@ -69,5 +93,5 @@ async function generateReply(history, input) {
   }
 }
 
-module.exports = { generateReply };
+module.exports = { generateReply, setLlmSetting, llmApiUrl, llmApiKey, llmModel };
 

@@ -35,6 +35,19 @@ function getDb() {
       );
       CREATE INDEX IF NOT EXISTS idx_tasks_user
         ON tasks(user_id, status);
+
+      CREATE TABLE IF NOT EXISTS settings (
+        key        TEXT    PRIMARY KEY,
+        value      TEXT    NOT NULL,
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS watched_groups (
+        chat_id   TEXT    PRIMARY KEY,
+        title     TEXT    NOT NULL DEFAULT '',
+        added_at  INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+        last_seen INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+      );
     `);
   }
   return _db;
@@ -116,6 +129,82 @@ function markTaskDone(taskId) {
     .run(taskId).changes > 0;
 }
 
+// ─── Settings ──────────────────────────────────────────────────────────────
+
+/**
+ * Get a persistent setting value (falls back to defaultValue).
+ * @param {string} key
+ * @param {string} [defaultValue='']
+ * @returns {string}
+ */
+function getSetting(key, defaultValue = '') {
+  const row = getDb()
+    .prepare('SELECT value FROM settings WHERE key = ?')
+    .get(key);
+  return row ? row.value : defaultValue;
+}
+
+/**
+ * Upsert a persistent setting.
+ * @param {string} key
+ * @param {string} value
+ */
+function setSetting(key, value) {
+  getDb()
+    .prepare(
+      `INSERT INTO settings (key, value, updated_at)
+       VALUES (?, ?, strftime('%s','now'))
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+    )
+    .run(key, value);
+}
+
+// ─── Watched Groups ────────────────────────────────────────────────────────
+
+/**
+ * Return all watched groups.
+ * @returns {{ chat_id: string, title: string, added_at: number, last_seen: number }[]}
+ */
+function getWatchedGroups() {
+  return getDb().prepare('SELECT * FROM watched_groups').all();
+}
+
+/**
+ * Add or update a group in the watchlist.
+ * @param {string} chatId
+ * @param {string} [title='']
+ */
+function addWatchedGroup(chatId, title = '') {
+  getDb()
+    .prepare(
+      `INSERT INTO watched_groups (chat_id, title, last_seen)
+       VALUES (?, ?, strftime('%s','now'))
+       ON CONFLICT(chat_id) DO UPDATE SET title = excluded.title, last_seen = strftime('%s','now')`
+    )
+    .run(String(chatId), title);
+}
+
+/**
+ * Remove a group from the watchlist.
+ * @param {string} chatId
+ * @returns {boolean}
+ */
+function removeWatchedGroup(chatId) {
+  return getDb()
+    .prepare('DELETE FROM watched_groups WHERE chat_id = ?')
+    .run(String(chatId)).changes > 0;
+}
+
+/**
+ * Update the last_seen timestamp for a watched group (proof it still exists).
+ * @param {string} chatId
+ */
+function touchWatchedGroup(chatId) {
+  getDb()
+    .prepare(`UPDATE watched_groups SET last_seen = strftime('%s','now') WHERE chat_id = ?`)
+    .run(String(chatId));
+}
+
 module.exports = {
   getDb,
   insertMessage,
@@ -123,5 +212,11 @@ module.exports = {
   insertTask,
   getPendingTasks,
   markTaskDone,
+  getSetting,
+  setSetting,
+  getWatchedGroups,
+  addWatchedGroup,
+  removeWatchedGroup,
+  touchWatchedGroup,
 };
 
