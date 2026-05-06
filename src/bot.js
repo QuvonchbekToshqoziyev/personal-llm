@@ -4,7 +4,7 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const { storeMessage }    = require('./storage');
 const { getRecentMessages } = require('./memory');
-const { generateReply, setLlmSetting, llmApiUrl, llmModel } = require('./llm');
+const { generateReply, setLlmSetting, llmApiUrl, llmApiKey, llmModel } = require('./llm');
 const { createTask, listTasks, completeTask } = require('./tasks');
 const db         = require('./db');
 const userClient = require('./userClient');
@@ -288,7 +288,7 @@ bot.onText(/^\/llminfo$/i, ownerOnly((msg) => {
     `🤖 *Current LLM settings*\n` +
     `URL: \`${llmApiUrl() || '(not set)'}\`\n` +
     `Model: \`${llmModel()}\`\n` +
-    `Key: \`${llmApiUrl() ? '(set)' : '(not set)'}\``,
+    `Key: \`${llmApiKey() ? '(set)' : '(not set)'}\``,
     { parse_mode: 'Markdown' }
   );
 }));

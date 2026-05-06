@@ -65,7 +65,7 @@ Edit `.env`:
 
 ```
 TELEGRAM_BOT_TOKEN=your_bot_token_here
-TELEGRAM_OWNER_ID=123456789          # your Telegram user ID — /myid shows it
+TELEGRAM_OWNER_ID=YOUR_USER_ID_HERE     # your Telegram user ID — /myid shows it
 TELEGRAM_STORAGE_CHAT_ID=-100xxxxxxxxxx
 
 # MTProto (required for private-group features)

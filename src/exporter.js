@@ -119,7 +119,7 @@ async function exportGroup(chatId, onProgress) {
 
       if (fs.existsSync(dest)) { mediaCount++; continue; } // already downloaded
 
-      const buffer = await client.downloadMedia(m, { outputFile: Buffer });
+      const buffer = await client.downloadMedia(m);
       if (buffer && buffer.length > 0) {
         fs.writeFileSync(dest, buffer);
         mediaCount++;
