@@ -41,6 +41,7 @@ User → Telegram Bot → Node.js
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
 - A private Telegram chat/channel for message storage (add your bot as admin)
 - An [OpenRouter](https://openrouter.ai) API key (or any OpenAI-compatible provider)
+- A YouTube Data API v3 key
 
 ### Installation
 
@@ -74,6 +75,9 @@ LLM_API_URL=https://openrouter.ai/api/v1/chat/completions
 LLM_API_KEY=sk-or-v1-...          # your OpenRouter key
 LLM_MODEL=mistralai/mistral-7b-instruct:free   # must be a model offered by the provider above
 LLM_CONTEXT_MESSAGES=10
+
+YOUTUBE_API_KEY=your_youtube_api_key_here
+YOUTUBE_MAX_RESULTS=5
 ```
 
 ### Rotating / revoking your API key
@@ -108,6 +112,8 @@ npm start
 | `/tasks` | List all pending tasks |
 | `/done <id>` | Mark a task as done |
 
+Tap the **YouTube** button to send a search query. The bot replies with the top YouTube result URLs only.
+
 Any other message is processed by the LLM. If the LLM detects a reminder/task
 intent it automatically creates a task; otherwise it replies conversationally.
 
@@ -121,6 +127,7 @@ src/
   memory.js    Phase 4 — retrieve context from DB index
   llm.js       Phase 5/7 — LLM with JSON action routing
   tasks.js     Phase 6 — task CRUD
+  youtube.js   YouTube search integration
   calendar.js  Phase 9 — Google Calendar placeholder
 ```
 

@@ -6,9 +6,12 @@ const { storeMessage }    = require('./storage');
 const { getRecentMessages } = require('./memory');
 const { generateReply }   = require('./llm');
 const { createTask, listTasks, completeTask } = require('./tasks');
+const { searchYoutubeVideos } = require('./youtube');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const MAX_CONTEXT = parseInt(process.env.LLM_CONTEXT_MESSAGES || '10', 10);
+const YOUTUBE_BUTTON_TEXT = '📺 YouTube';
+const pendingYoutubeQueries = new Map();
 
 if (!token) {
   console.error('Error: TELEGRAM_BOT_TOKEN is not set in environment variables.');
@@ -18,6 +21,23 @@ if (!token) {
 const bot = new TelegramBot(token, { polling: true });
 
 console.log('Bot is running...');
+
+function getMainKeyboard() {
+  return {
+    reply_markup: {
+      keyboard: [[{ text: YOUTUBE_BUTTON_TEXT }]],
+      resize_keyboard: true,
+    },
+  };
+}
+
+function sendBotMessage(chatId, text) {
+  return bot.sendMessage(chatId, text, getMainKeyboard());
+}
+
+bot.onText(/^\/start$/i, (msg) => {
+  sendBotMessage(msg.chat.id, '👋 Bot is ready. Tap the YouTube button to search for videos.');
+});
 
 // ─── Phase 8: Command — /task <title> [due: YYYY-MM-DD] ───────────────────
 bot.onText(/^\/task (.+)/i, async (msg, match) => {
@@ -34,7 +54,7 @@ bot.onText(/^\/task (.+)/i, async (msg, match) => {
   const reply  = `✅ Task #${taskId} created: "${title}"${dueDate ? ` (due ${dueDate})` : ''}`;
 
   await storeMessage(bot, userId, reply, 'assistant', 'task');
-  bot.sendMessage(chatId, reply);
+  sendBotMessage(chatId, reply);
 });
 
 // ─── Phase 8: Command — /tasks ─────────────────────────────────────────────
@@ -44,13 +64,13 @@ bot.onText(/^\/tasks$/i, (msg) => {
   const tasks  = listTasks(userId);
 
   if (tasks.length === 0) {
-    return bot.sendMessage(chatId, '📋 No pending tasks.');
+    return sendBotMessage(chatId, '📋 No pending tasks.');
   }
 
   const lines = tasks.map(
     t => `#${t.id} ${t.title}${t.due_date ? ` — due ${t.due_date}` : ''}`
   );
-  bot.sendMessage(chatId, `📋 Pending tasks:\n${lines.join('\n')}`);
+  sendBotMessage(chatId, `📋 Pending tasks:\n${lines.join('\n')}`);
 });
 
 // ─── Phase 8: Command — /done <id> ─────────────────────────────────────────
@@ -58,7 +78,7 @@ bot.onText(/^\/done (\d+)$/i, (msg, match) => {
   const chatId = msg.chat.id;
   const taskId = parseInt(match[1], 10);
   const ok     = completeTask(taskId);
-  bot.sendMessage(chatId, ok
+  sendBotMessage(chatId, ok
     ? `✔️ Task #${taskId} marked as done.`
     : `⚠️ Task #${taskId} not found.`
   );
@@ -71,6 +91,35 @@ bot.on('message', async (msg) => {
   const userId = msg.from ? msg.from.id : msg.chat.id;
   const chatId = msg.chat.id;
   const text   = msg.text.trim();
+
+  if (text === YOUTUBE_BUTTON_TEXT) {
+    pendingYoutubeQueries.set(userId, true);
+    await sendBotMessage(chatId, 'Send a YouTube search query.');
+    return;
+  }
+
+  if (pendingYoutubeQueries.get(userId)) {
+    pendingYoutubeQueries.delete(userId);
+
+    await storeMessage(bot, userId, text, 'user');
+
+    try {
+      const results = await searchYoutubeVideos(text);
+      const reply = results.length > 0 ? results.join('\n') : 'No YouTube results found.';
+
+      await storeMessage(bot, userId, reply, 'assistant');
+      await sendBotMessage(chatId, reply);
+    } catch (err) {
+      console.error('YouTube search error:', err.message);
+      const reply = err.message.includes('YOUTUBE_API_KEY is not set')
+        ? 'YouTube search is not configured yet.'
+        : 'YouTube search is temporarily unavailable. Please try again later.';
+
+      await sendBotMessage(chatId, reply);
+    }
+
+    return;
+  }
 
   // Phase 3: persist incoming user message (mirror to Telegram storage chat)
   await storeMessage(bot, userId, text, 'user');
@@ -89,7 +138,7 @@ bot.on('message', async (msg) => {
     const hint = isConfig
       ? 'The bot is not configured correctly (missing API key or URL).'
       : 'The AI service is temporarily unavailable. Please try again later.';
-    bot.sendMessage(chatId, `Sorry, I could not get a response. ${hint}`);
+    await sendBotMessage(chatId, `Sorry, I could not get a response. ${hint}`);
     return;
   }
 
@@ -104,7 +153,7 @@ bot.on('message', async (msg) => {
     await storeMessage(bot, userId, reply, 'assistant');
   }
 
-  bot.sendMessage(chatId, reply);
+  await sendBotMessage(chatId, reply);
 });
 
 bot.on('polling_error', (error) => {
@@ -112,4 +161,3 @@ bot.on('polling_error', (error) => {
 });
 
 module.exports = bot;
-
