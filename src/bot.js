@@ -11,6 +11,7 @@ const { searchYoutubeVideos } = require('./youtube');
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const MAX_CONTEXT = parseInt(process.env.LLM_CONTEXT_MESSAGES || '10', 10);
 const YOUTUBE_BUTTON_TEXT = '📺 YouTube';
+const YOUTUBE_QUERY_TIMEOUT_MS = 5 * 60 * 1000;
 const pendingYoutubeQueries = new Map();
 
 if (!token) {
@@ -33,6 +34,23 @@ function getMainKeyboard() {
 
 function sendBotMessage(chatId, text) {
   return bot.sendMessage(chatId, text, getMainKeyboard());
+}
+
+function clearYoutubeQuery(userId) {
+  const timeout = pendingYoutubeQueries.get(userId);
+  if (timeout) clearTimeout(timeout);
+  pendingYoutubeQueries.delete(userId);
+}
+
+function startYoutubeQuery(userId) {
+  clearYoutubeQuery(userId);
+
+  const timeout = setTimeout(() => {
+    pendingYoutubeQueries.delete(userId);
+  }, YOUTUBE_QUERY_TIMEOUT_MS);
+
+  if (typeof timeout.unref === 'function') timeout.unref();
+  pendingYoutubeQueries.set(userId, timeout);
 }
 
 bot.onText(/^\/start$/i, (msg) => {
@@ -93,21 +111,18 @@ bot.on('message', async (msg) => {
   const text   = msg.text.trim();
 
   if (text === YOUTUBE_BUTTON_TEXT) {
-    pendingYoutubeQueries.set(userId, true);
+    startYoutubeQuery(userId);
     await sendBotMessage(chatId, 'Send a YouTube search query.');
     return;
   }
 
-  if (pendingYoutubeQueries.get(userId)) {
-    pendingYoutubeQueries.delete(userId);
-
-    await storeMessage(bot, userId, text, 'user');
+  if (pendingYoutubeQueries.has(userId)) {
+    clearYoutubeQuery(userId);
 
     try {
       const results = await searchYoutubeVideos(text);
       const reply = results.length > 0 ? results.join('\n') : 'No YouTube results found.';
 
-      await storeMessage(bot, userId, reply, 'assistant');
       await sendBotMessage(chatId, reply);
     } catch (err) {
       console.error('YouTube search error:', err.message);

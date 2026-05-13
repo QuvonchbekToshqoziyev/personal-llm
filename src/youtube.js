@@ -25,7 +25,7 @@ async function searchYoutubeVideos(query) {
     },
   });
 
-  const items = Array.isArray(response.data && response.data.items) ? response.data.items : [];
+  const items = Array.isArray(response.data?.items) ? response.data.items : [];
 
   return items
     .map((item) => item && item.id && item.id.videoId)
